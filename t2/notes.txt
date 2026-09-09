@@ -1,0 +1,27 @@
+1) reset test
+
+posedge: os 16 regs estavam errados
+solução: trocar por negedge clk
+
+# Reset value mismatch at address 6: expected 6, got 63
+# Reset value mismatch at address 14: expected ff, got 0
+
+2) read-only test
+
+testamos escrever nos read-only reg. Deu erro no reg 6, que tá com 0x63
+
+# Ready-Only mismatch at address 6: expected 6, got 63
+
+3) read-write test
+
+falhou em todos:
+
+# Read-Write value mismatch at address 7: expected 17, got 7
+# Read-Write value mismatch at address 8: expected 18, got 8
+# Read-Write value mismatch at address 9: expected 19, got 9
+# Read-Write value mismatch at address 10: expected 1a, got a
+# Read-Write value mismatch at address 11: expected 1b, got ff
+# Read-Write value mismatch at address 12: expected 1c, got ff
+# Read-Write value mismatch at address 13: expected 1d, got ff
+# Read-Write value mismatch at address 14: expected 1e, got 0
+# Read-Write value mismatch at address 15: expected 1f, got ff

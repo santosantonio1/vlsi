@@ -1,0 +1,153 @@
+# ** Note: (vsim-220) '/soft64/mentor/ferramentas/questa/2025.3/questasim/linux_x86_64/../modelsim.ini' is used as the ini file.
+# vsim -voptargs="+acc" -onfinish stop -wlfdeleteonquit work.reg_bank_tb -l out.txt 
+# Start time: 21:11:40 on Sep 04,2026
+# ** Note: (vsim-3812) Design is being optimized...
+# ** Warning: (vopt-10587) Some optimizations are turned off because the +acc switch is in effect. This will cause your simulation to run slowly. Please use -access/-debug to maintain needed visibility. The +acc switch would be deprecated in a future release.
+# ** Note: (vopt-220) '/soft64/mentor/ferramentas/questa/2025.3/questasim/linux_x86_64/../modelsim.ini' is used as the ini file.
+# ** Note: (vsim-12126) Error and warning message counts have been restored: Errors=0, Warnings=1.
+# //  Questa Sim-64
+# //  Version 2025.3 linux_x86_64 Sep 15 2025
+# //
+# // Unpublished work. Copyright 2025 Siemens
+# //
+# // This material contains trade secrets or otherwise confidential information
+# // owned by Siemens Industry Software Inc. or its affiliates (collectively,
+# // "SISW"), or its licensors. Access to and use of this information is strictly
+# // limited as set forth in the Customer's applicable agreements with SISW.
+# //
+# // This material may not be copied, distributed, or otherwise disclosed outside
+# // of the Customer's facilities without the express written permission of SISW,
+# // and may not be used in any way not expressly authorized by SISW.
+# //
+# Loading sv_std.std
+# Loading work.reg_bank_tb_sv_unit(fast)
+# Loading work.reg_bank_tb(fast)
+# Loading work.regbank_if(fast__1)
+# Loading std.standard
+# Loading std.textio(body)
+# Loading ieee.std_logic_1164(body)
+# Loading vital2000.vital_timing(body)
+# Loading simprim.vcomponents
+# Loading vital2000.vital_primitives(body)
+# Loading simprim.vpackage(body)
+# ** Warning: (vsim-3479) Time unit 'ps' is less than the simulator resolution (1ns).
+#    Time: 0 ns  Iteration: 0  Instance: /reg_bank_tb/cuv
+# Loading work.reg_bank(structure)#1
+# Loading simprim.x_inv(x_inv_v)#1
+# Loading simprim.x_buf(x_buf_v)#96
+# Loading simprim.x_inv(x_inv_v)#2
+# Loading simprim.x_sff(x_sff_v)#38
+# Loading simprim.x_lut4(x_lut4_v)#44
+# Loading simprim.x_lut4(x_lut4_v)#2
+# Loading simprim.x_lut4(x_lut4_v)#3
+# Loading simprim.x_obuf(x_obuf_v)#1
+# Loading simprim.x_buf(x_buf_v)#98
+# Loading simprim.x_obuf(x_obuf_v)#2
+# Loading simprim.x_obuf(x_obuf_v)#3
+# Loading simprim.x_obuf(x_obuf_v)#4
+# Loading simprim.x_obuf(x_obuf_v)#5
+# Loading simprim.x_obuf(x_obuf_v)#6
+# Loading simprim.x_obuf(x_obuf_v)#7
+# Loading simprim.x_obuf(x_obuf_v)#8
+# Loading simprim.x_bufgmux(x_bufgmux_v)#1
+# Loading simprim.x_inv(x_inv_v)#3
+# Loading simprim.x_mux2(x_mux2_v)#1
+# Loading simprim.x_mux2(x_mux2_v)#2
+# Loading simprim.x_mux2(x_mux2_v)#3
+# Loading simprim.x_mux2(x_mux2_v)#4
+# Loading simprim.x_mux2(x_mux2_v)#5
+# Loading simprim.x_mux2(x_mux2_v)#6
+# Loading simprim.x_mux2(x_mux2_v)#7
+# Loading simprim.x_lut4(x_lut4_v)#4
+# Loading simprim.x_lut4(x_lut4_v)#5
+# Loading simprim.x_ff(x_ff_v)#1
+# Loading simprim.x_lut4(x_lut4_v)#6
+# Loading simprim.x_lut4(x_lut4_v)#48
+# Loading simprim.x_lut4(x_lut4_v)#8
+# Loading simprim.x_lut4(x_lut4_v)#9
+# Loading simprim.x_lut4(x_lut4_v)#10
+# Loading simprim.x_lut4(x_lut4_v)#11
+# Loading simprim.x_ff(x_ff_v)#2
+# Loading simprim.x_lut4(x_lut4_v)#12
+# Loading simprim.x_lut4(x_lut4_v)#47
+# Loading simprim.x_lut4(x_lut4_v)#14
+# Loading simprim.x_lut4(x_lut4_v)#16
+# Loading simprim.x_lut4(x_lut4_v)#17
+# Loading simprim.x_sff(x_sff_v)#35
+# Loading simprim.x_sff(x_sff_v)#39
+# Loading simprim.x_lut4(x_lut4_v)#18
+# Loading simprim.x_lut4(x_lut4_v)#70
+# Loading simprim.x_lut4(x_lut4_v)#20
+# Loading simprim.x_lut4(x_lut4_v)#21
+# Loading simprim.x_lut4(x_lut4_v)#22
+# Loading simprim.x_lut4(x_lut4_v)#23
+# Loading simprim.x_lut4(x_lut4_v)#24
+# Loading simprim.x_lut4(x_lut4_v)#25
+# Loading simprim.x_lut4(x_lut4_v)#26
+# Loading simprim.x_lut4(x_lut4_v)#27
+# Loading simprim.x_lut4(x_lut4_v)#28
+# Loading simprim.x_lut4(x_lut4_v)#30
+# Loading simprim.x_lut4(x_lut4_v)#31
+# Loading simprim.x_lut4(x_lut4_v)#32
+# Loading simprim.x_lut4(x_lut4_v)#68
+# Loading simprim.x_lut4(x_lut4_v)#34
+# Loading simprim.x_lut4(x_lut4_v)#35
+# Loading simprim.x_lut4(x_lut4_v)#36
+# Loading simprim.x_lut4(x_lut4_v)#37
+# Loading simprim.x_lut4(x_lut4_v)#38
+# Loading simprim.x_lut4(x_lut4_v)#45
+# Loading simprim.x_lut4(x_lut4_v)#40
+# Loading simprim.x_lut4(x_lut4_v)#41
+# Loading simprim.x_lut4(x_lut4_v)#42
+# Loading simprim.x_ff(x_ff_v)#3
+# Loading simprim.x_lut4(x_lut4_v)#43
+# Loading simprim.x_lut4(x_lut4_v)#46
+# Loading simprim.x_lut4(x_lut4_v)#49
+# Loading simprim.x_ff(x_ff_v)#4
+# Loading simprim.x_lut4(x_lut4_v)#50
+# Loading simprim.x_lut4(x_lut4_v)#51
+# Loading simprim.x_lut4(x_lut4_v)#62
+# Loading simprim.x_ff(x_ff_v)#5
+# Loading simprim.x_lut4(x_lut4_v)#53
+# Loading simprim.x_lut4(x_lut4_v)#54
+# Loading simprim.x_lut4(x_lut4_v)#55
+# Loading simprim.x_lut4(x_lut4_v)#56
+# Loading simprim.x_lut4(x_lut4_v)#57
+# Loading simprim.x_lut4(x_lut4_v)#58
+# Loading simprim.x_ff(x_ff_v)#6
+# Loading simprim.x_lut4(x_lut4_v)#59
+# Loading simprim.x_lut4(x_lut4_v)#60
+# Loading simprim.x_lut4(x_lut4_v)#61
+# Loading simprim.x_ff(x_ff_v)#7
+# Loading simprim.x_lut4(x_lut4_v)#63
+# Loading simprim.x_lut4(x_lut4_v)#64
+# Loading simprim.x_ff(x_ff_v)#8
+# Loading simprim.x_lut4(x_lut4_v)#65
+# Loading simprim.x_lut4(x_lut4_v)#66
+# Loading simprim.x_lut4(x_lut4_v)#67
+# Loading simprim.x_lut4(x_lut4_v)#69
+# Loading simprim.x_lut4(x_lut4_v)#71
+# Loading simprim.x_ff(x_ff_v)#9
+# Loading simprim.x_sff(x_sff_v)#36
+# Loading simprim.x_lut4(x_lut4_v)#72
+# Loading simprim.x_zero(x_zero_v)#1
+# Loading simprim.x_one(x_one_v)#1
+# Loading simprim.x_roc(x_roc_v)#1
+# Loading simprim.x_toc(x_toc_v)#1
+# --- RESET TEST ---
+# Reset value mismatch at address 6: expected 6, got 63
+# Reset value mismatch at address 14: expected ff, got 0
+# --- WRITE READ-ONLY TEST ---
+# Ready-Only mismatch at address 2: expected 31, got 12
+# Ready-Only mismatch at address 6: expected 6, got 16
+# --- WRITE READ-WRITE TEST ---
+# Read-Write value mismatch at address 7: expected 17, got 18
+# Read-Write value mismatch at address 11: expected 1b, got ff
+# Read-Write value mismatch at address 12: expected 1c, got ff
+# Read-Write value mismatch at address 13: expected 1d, got b1
+# Read-Write value mismatch at address 14: expected 1e, got 0
+# Read-Write value mismatch at address 15: expected 1f, got ff
+# ** Note: $finish    : reg_bank_tb.sv(141)
+#    Time: 1680 ns  Iteration: 1  Instance: /reg_bank_tb
+# Break in Module reg_bank_tb at reg_bank_tb.sv line 141
+# Stopped at reg_bank_tb.sv line 141
