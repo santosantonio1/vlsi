@@ -1,0 +1,2 @@
+package receptor_padrao_pkg;
+endpackage
