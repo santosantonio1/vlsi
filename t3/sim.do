@@ -10,4 +10,5 @@ vlog -sv tb.sv
 
 vsim -voptargs=+acc -onfinish stop work.tb -l out.log
 
-run 100 ns
+run -all
+exit
