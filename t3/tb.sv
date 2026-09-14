@@ -31,72 +31,104 @@ module tb ();
         // $display("[INFO] sending %h", b);
 
         foreach (b[i]) begin
-            @(vif.cb);
-            vif.cb.data_sr <= b[i];
+            vif.data_sr <= b[i];
+            @(posedge vif.clk);
         end
     endtask
 
     // 6 bytes -> 6*8-1 = 47
-    task drive(logic [47:0] data); 
+    task drive(logic [47:0] data);
         for (int i = 5; i >= 0; i--) begin
             send_byte(data[8*i+:8]);
         end
     endtask
-    
+
+    // stream primitives: drive only, never wait or check, so they can be
+    // chained without inserting stray bits into the bitstream
+    task sync_up();
+        automatic logic [47:0] x = {align, payload_1};
+        repeat(3) drive(x);
+    endtask
+
+    task break_sync();
+        automatic logic [47:0] x = {align, payload_2} >> 8;
+        drive(x);
+    endtask
+
     task reset();
         vif.rst <= 1'b1;
-        repeat(3) @(posedge clk);
+        repeat(3) @(posedge vif.clk);
         vif.rst <= 1'b0;
     endtask
 
-    logic [47:0] x;
-
     task test_rst();
         reset();
-        assert (vif.cb.data_pl === 8'h00 && vif.cb.sync === 1'b0 && vif.cb.data_pl_en === 1'b0) 
+        assert (vif.data_pl === 8'h00 && vif.sync === 1'b0 && vif.data_pl_en === 1'b0) 
         else $error("[FAIL] wrong reset values");
     endtask
 
     task test_sync();
-        automatic logic [47:0] x = {align, payload_1};
+        sync_up();
 
-        repeat(3) drive(x);
+        @(posedge vif.clk);
 
-        assert (vif.cb.sync === 1'b1)
+        assert (vif.sync === 1'b1)
         else $error("[FAIL] sync didn't lift after 3 consecutive matches");
     endtask
 
     task test_desync();
-        automatic logic [47:0] x = {align, payload_2} >> 8;
+        sync_up();
+        break_sync();
 
-        test_sync();
-        drive(x);    
+        @(posedge vif.clk);
 
-        assert (vif.cb.sync === 1'b0)
+        assert (vif.sync === 1'b0)
         else $error("[FAIL] didn't desync after misaligned data");
     endtask
 
     task test_resync();
+        sync_up();
+        break_sync();
+        sync_up();
 
-        test_sync();
-        test_desync();
-        test_sync();
+        @(posedge vif.clk);
+
+        assert (vif.sync === 1'b1)
+        else $error("[FAIL] didn't resync after realignment");
     endtask
+
+    logic [7:0] captured [$];
+
+    always @(posedge vif.clk or posedge vif.rst) begin
+        if (vif.rst) 
+            captured.delete();
+        else if(vif.data_pl_en === 1'b1)
+            captured.push_back(vif.data_pl);
+    end
 
     task test_data_pl();
         automatic logic [47:0] x = {align, payload_1};
 
-        test_sync();
+        sync_up();
         drive(x);
-        
-        assert (vif.cb.data_pl_en === 1'b1)
+
+        @(posedge vif.clk);
+
+        assert (vif.data_pl_en === 1'b1)
         else $error("[FAIL] data_pl_en didn't lift with synced dut");
 
-        assert (vif.cb.data_pl === payload_1)
-        else $error("[FAIL] data_pl different from expected data");
+        assert (captured.size() == 5)
+        else $error ("[FAIL] lost data (the queue didn't capture all 5 bytes)");
 
-        @(posedge clk);
-        assert (vif.cb.data_pl_en === 1'b0)
+        for (int i = 4; i >= 0; i--) begin
+            assert (captured[0] === payload_1[i*8+:8])
+            else $error("[FAIL] data_pl different from expected data");
+
+            captured.pop_front();
+        end
+
+        @(posedge vif.clk);
+        assert (vif.data_pl_en === 1'b0)
         else $error("[FAIL] data_pl_en stayed high after 1 cycle");
     endtask
 

@@ -9,10 +9,4 @@ interface receptor_padrao_if
     logic data_pl_en;
     logic sync;
 
-    clocking cb @(posedge clk);
-        default input #1step output #1ns;
-        input data_pl, data_pl_en, sync;
-        output data_sr;        
-    endclocking
-
 endinterface
