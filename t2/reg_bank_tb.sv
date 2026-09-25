@@ -1,19 +1,3 @@
-class reg_bank_tr;
-    logic rd_en;
-    logic [3:0] rd_address;
-    logic wr_en;
-    logic [3:0] wr_address;
-    logic [7:0] wr_data;
-    
-    function new();
-        rd_en       = 0;
-        rd_address  = 0;
-        wr_en       = 0;
-        wr_address  = 0;
-        wr_data     = 0;
-    endfunction
-endclass
-
 module reg_bank_tb();
 
     logic clk;
@@ -40,8 +24,6 @@ module reg_bank_tb();
         .rd_data    (vif.rd_data   ) 
 
     );
-
-    reg_bank_tr rst_tr = new();
 
     logic [7:0] reset_values[16] = '{
         8'h32,  // Read Only
@@ -70,11 +52,11 @@ module reg_bank_tb();
         #(200ns);
         vif.rst = 1;
 
-        vif.rd_en       = rst_tr.rd_en;
-        vif.rd_address  = rst_tr.rd_address;
-        vif.wr_en       = rst_tr.wr_en;
-        vif.wr_address  = rst_tr.wr_address;
-        vif.wr_data     = rst_tr.wr_data;
+        vif.rd_en       = '0;
+        vif.rd_address  = '0;
+        vif.wr_en       = '0;
+        vif.wr_address  = '0;
+        vif.wr_data     = '0;
 
         #(200ns);
         vif.rst = 0;
@@ -92,7 +74,7 @@ module reg_bank_tb();
         // ----------------------------------------------------------
         
         $display("--- WRITE READ-ONLY TEST ---");
-        for (int i = 0; i < 7; i++) begin
+        for (int i = 0; i < 6; i++) begin
             @(negedge clk);
 
             vif.rd_en       = 0;
@@ -105,6 +87,7 @@ module reg_bank_tb();
 
             vif.rd_en       = 1;
             vif.rd_address  = i;
+            vif.wr_en       = 0;
             
             @(negedge clk);
 
@@ -116,7 +99,7 @@ module reg_bank_tb();
         // ----------------------------------------------------------
         
         $display("--- WRITE READ-WRITE TEST ---");
-        for (int i = 7; i < 16; i++) begin
+        for (int i = 6; i < 16; i++) begin
             @(negedge clk);
             
             vif.rd_en       = 0;
@@ -130,6 +113,7 @@ module reg_bank_tb();
 
             vif.rd_en       = 1;
             vif.rd_address  = i;
+            vif.wr_en       = 0;
             
             @(negedge clk);
 

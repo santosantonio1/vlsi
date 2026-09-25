@@ -1,0 +1,97 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+
+\begin{document}
+
+\begin{center}
+    {\large\bfseries Relatório de Verificação --- reg\_bank}\\[4pt]
+    Lucas Damo \quad$\cdot$\quad Antônio dos Santos\\[4pt]
+    CUV: \texttt{reg\_bank.vhd} \quad Testbench: \texttt{reg\_bank\_tb.sv}
+\end{center}
+
+\section{Objetivo}
+
+Verificar funcionalmente o banco de registradores \texttt{reg\_bank} (16 registradores de 8 bits)
+em relação à especificação do Trabalho 2. A especificação define: 6 registradores
+\emph{Read Only} (endereços 0--5), 10 registradores \emph{Read/Write} (endereços 6--15), valores
+iniciais após reset, reset síncrono ativo alto, clock de 50\,MHz e leitura/escrita
+na borda de subida com \texttt{rd\_en}/\texttt{wr\_en} em nível alto.
+
+\section{Ambiente de verificação}
+
+\begin{itemize}
+    \item Simulador: Questa 2025.3, resolução de 1\,ps (\texttt{vsim -t ps}), script \texttt{sim.do}.
+    \item O CUV (VHDL) é instanciado no testbench e conectado à interface \texttt{regbank\_if},
+          também instanciada no testbench.
+    \item Clock de 20\,ns (50\,MHz), iniciado após 200\,ns, respeitando o tempo de
+          \emph{power on reset} de 100\,ns.
+    \item Estímulos são aplicados e as saídas amostradas na borda de descida do clock,
+          evitando condições de corrida com a borda de subida em que o CUV opera.
+          Na primeira versão a amostragem era feita na borda de subida e todas as
+          16 leituras de reset divergiam; a mudança para a borda de descida eliminou
+          esse problema.
+    \item A checagem usa \texttt{assert} imediato comparando \texttt{rd\_data} com o valor
+          esperado. Em caso de falha, a divergência é impressa com \texttt{\$display}.
+\end{itemize}
+
+\section{Testes realizados}
+
+\begin{enumerate}
+    \item \textbf{Reset:} \texttt{rst}=1 por 200\,ns com as demais entradas em 0; em seguida,
+          leitura dos 16 endereços e comparação com a Tabela 2 da especificação.
+    \item \textbf{Escrita em registradores Read Only:} para cada endereço $i$ de 0 a 5, escreve
+          $i + \texttt{0x10}$ e lê o endereço de volta. Espera-se o valor de reset.
+    \item \textbf{Escrita em registradores Read/Write:} para cada endereço $i$ de 6 a 15, escreve
+          $i + \texttt{0x10}$ e lê o endereço de volta. Espera-se o valor escrito.
+\end{enumerate}
+
+Nos testes 2 e 3, a escrita é feita em um ciclo com \texttt{wr\_en}=1 e \texttt{rd\_en}=0; no ciclo
+seguinte, a leitura é feita com \texttt{rd\_en}=1 e \texttt{wr\_en}=0.
+
+\section{Resultados}
+
+A simulação terminou em 1680\,ns. As divergências estão na Tabela~\ref{tab:res}
+(valores em hexadecimal).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{c c l c c l}
+\toprule
+\textbf{\#} & \textbf{Teste} & \textbf{Entrada} & \textbf{Esperado} & \textbf{Obtido} & \textbf{Situação} \\
+\midrule
+1  & Reset      & leitura end.\ 6               & 06 & 63 & Erro do CUV \\
+2  & Reset      & leitura end.\ 14              & FF & 00 & Erro do CUV \\
+3  & Read Only  & escrita 12 no end.\ 2         & 31 & 12 & Erro do CUV \\
+4  & Read/Write & escrita 17 no end.\ 7         & 17 & 18 & Erro do CUV \\
+5  & Read/Write & escrita 1B no end.\ 11        & 1B & FF & Erro do CUV \\
+6  & Read/Write & escrita 1C no end.\ 12        & 1C & FF & Erro do CUV \\
+7  & Read/Write & escrita 1D no end.\ 13        & 1D & B1 & Erro do CUV \\
+8  & Read/Write & escrita 1E no end.\ 14        & 1E & 00 & Erro do CUV \\
+9  & Read/Write & escrita 1F no end.\ 15        & 1F & FF & Erro do CUV \\
+\bottomrule
+\end{tabular}
+\caption{Divergências encontradas.}
+\label{tab:res}
+\end{table}
+
+Observações sobre os resultados:
+\begin{itemize}
+    \item \textbf{Reset:} 14 dos 16 registradores apresentaram o valor inicial correto.
+          Os endereços 6 e 14 divergem.
+    \item \textbf{Read Only:} o endereço 2 aceitou a escrita, violando a especificação.
+          Os endereços 0, 1, 3, 4 e 5 mantiveram o valor de reset.
+    \item \textbf{Read/Write:} os endereços 6, 8, 9 e 10 armazenaram
+          o valor escrito. Nos endereços 11, 12 e 15 a escrita não teve efeito (permanece \texttt{FF}).
+          O endereço 7 retornou um valor diferente do escrito (\texttt{0x18}), o endereço 13 retornou
+          \texttt{0xB1} e o endereço 14 retornou \texttt{0x00}, mesmo valor lido após o reset.
+\end{itemize}
+
+Em resumo, foram identificadas 9 divergências atribuídas ao CUV, afetando 8 registradores
+(2, 6, 7, 11, 12, 13, 14 e 15, sendo que o 6 falha apenas no reset).
+
+\end{document}

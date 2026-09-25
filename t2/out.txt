@@ -1,6 +1,6 @@
 # ** Note: (vsim-220) '/soft64/mentor/ferramentas/questa/2025.3/questasim/linux_x86_64/../modelsim.ini' is used as the ini file.
-# vsim -voptargs="+acc" -onfinish stop -wlfdeleteonquit work.reg_bank_tb -l out.txt 
-# Start time: 21:11:40 on Sep 04,2026
+# vsim -t ps -voptargs="+acc" -onfinish stop -wlfdeleteonquit work.reg_bank_tb -l out.txt 
+# Start time: 20:12:07 on Sep 25,2026
 # ** Note: (vsim-3812) Design is being optimized...
 # ** Warning: (vopt-10587) Some optimizations are turned off because the +acc switch is in effect. This will cause your simulation to run slowly. Please use -access/-debug to maintain needed visibility. The +acc switch would be deprecated in a future release.
 # ** Note: (vopt-220) '/soft64/mentor/ferramentas/questa/2025.3/questasim/linux_x86_64/../modelsim.ini' is used as the ini file.
@@ -20,7 +20,6 @@
 # // and may not be used in any way not expressly authorized by SISW.
 # //
 # Loading sv_std.std
-# Loading work.reg_bank_tb_sv_unit(fast)
 # Loading work.reg_bank_tb(fast)
 # Loading work.regbank_if(fast__1)
 # Loading std.standard
@@ -30,8 +29,6 @@
 # Loading simprim.vcomponents
 # Loading vital2000.vital_primitives(body)
 # Loading simprim.vpackage(body)
-# ** Warning: (vsim-3479) Time unit 'ps' is less than the simulator resolution (1ns).
-#    Time: 0 ns  Iteration: 0  Instance: /reg_bank_tb/cuv
 # Loading work.reg_bank(structure)#1
 # Loading simprim.x_inv(x_inv_v)#1
 # Loading simprim.x_buf(x_buf_v)#96
@@ -139,7 +136,6 @@
 # Reset value mismatch at address 14: expected ff, got 0
 # --- WRITE READ-ONLY TEST ---
 # Ready-Only mismatch at address 2: expected 31, got 12
-# Ready-Only mismatch at address 6: expected 6, got 16
 # --- WRITE READ-WRITE TEST ---
 # Read-Write value mismatch at address 7: expected 17, got 18
 # Read-Write value mismatch at address 11: expected 1b, got ff
@@ -147,7 +143,9 @@
 # Read-Write value mismatch at address 13: expected 1d, got b1
 # Read-Write value mismatch at address 14: expected 1e, got 0
 # Read-Write value mismatch at address 15: expected 1f, got ff
-# ** Note: $finish    : reg_bank_tb.sv(141)
+# ** Note: $finish    : reg_bank_tb.sv(125)
 #    Time: 1680 ns  Iteration: 1  Instance: /reg_bank_tb
-# Break in Module reg_bank_tb at reg_bank_tb.sv line 141
-# Stopped at reg_bank_tb.sv line 141
+# Break in Module reg_bank_tb at reg_bank_tb.sv line 125
+# Stopped at reg_bank_tb.sv line 125
+# End time: 20:12:09 on Sep 25,2026, Elapsed time: 0:00:02
+# Errors: 0, Warnings: 1
