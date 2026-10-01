@@ -45,7 +45,6 @@ A decision recorded here binds both the RTL and the testbench.
 | D1 | Spec prose says `data_en`, Tabela 1 says `data_pl_en` | Use `data_pl_en` (Tabela 1 is normative) |
 | D2 | How does the receiver search for the alignment word? | **Single-candidate hunt**: lock onto the first `0xA5`, verify it repeats at 48-bit spacing, restart the hunt on any mismatch |
 | D3 | Are `sync` / `data_pl` / `data_pl_en` registered or combinational? | **Registered.** Outputs update on the clock edge after the condition is met |
-| D4 | *...* | *open* |
 
 D3 lets the timing properties in §6 be exact (`|=>`) instead of a `##[0:1]` window.
 The spec does not say which, but R15 calls for a synthesizable FSM and R2 for an
@@ -242,35 +241,54 @@ One row per test. Every requirement in §2 must appear in at least one row.
 
 | Test ID | Req(s) | Name | Description | Stimulus | Checks | Status |
 |---|---|---|---|---|---|---|
-| T01 | | | | | | todo |
-| T02 | | | | | | todo |
-| T03 | | | | | | todo |
-| T04 | | | | | | todo |
-| T05 | | | | | | todo |
+"Synced" in a stimulus column means: reset, then 3 clean frames, then `sync` checked high.
 
-<!--
-Example row:
-| T01 | R2, R3 | reset_values | Assert rst mid-frame, check outputs return to idle | Drive partial frame, raise rst asynchronously off-edge | sync==0, data_pl_en==0, receiver restarts hunting | todo |
--->
+**Phase 1 — directed**
 
-### 4.1 Corner cases to consider
+| Test ID | Req(s) | Name | Description | Stimulus | Checks | Status |
+|---|---|---|---|---|---|---|
+| T01 | R1 | pinout | Top and ports match Tabela 1 | Compile and elaborate the TB against the DUT | Elaboration succeeds with no port mismatch | todo |
+| T02 | R2 | rst_async | Reset acts without a clock edge | Synced; raise `rst` at `+CLK_PERIOD/4` | §6.1 checker: `sync`/`data_pl_en` low 1 ps after `rst` rises | todo |
+| T03 | R2 | rst_narrow | Sub-period pulse still resets | Synced; pulse `rst` for `CLK_PERIOD/2`, entirely between edges | §6.1 checker fires; `sync` still low after release | todo |
+| T04 | R2 | rst_level | Held reset blocks sync | Hold `rst` high while driving 4 clean frames | `sync` never rises, `data_pl_en` never pulses | todo |
+| T05 | R3 | rst_state | Reset clears sync state, no resume | Synced; reset at mid-byte, byte boundary, inside ALIGN; then 3 clean frames each time | `sync` low after 2 frames, rises exactly as in T06 after the 3rd | todo |
+| T06 | R4, R5, R7, R8 | sync_up | Three alignment words lock | Reset, 3 clean frames | `sync` rises exactly 1 cycle after the 3rd ALIGN ends (A6); low before | todo |
+| T07 | R8, R9 | sync_two | Two alignment words are not enough | Reset, 2 clean frames, a frame with a corrupted ALIGN, 1 clean frame | `sync` never rises; no `data_pl_en` | todo |
+| T08 | R6, R7, R11–R13 | data | Payload bytes come out in order, MSB first | Synced; frame with 5 distinct, bit-asymmetric bytes (e.g. `01 23 45 67 89`) | 5 pulses; bytes match in order; each pulse 1 cycle (A1); cadence (A5) | todo |
+| T09 | R11 | data_extremes | Constant payloads | Synced; frames with all `0x00` and all `0xFF` | `sync` holds; bytes match | todo |
+| T10 | R10 | desync_align | Bad ALIGN drops sync, then re-locks | Synced; flip one bit of an ALIGN; 3 clean frames | `sync` low ≤ 1 cycle after the bad ALIGN ends; no `data_pl_en` until re-locked; re-lock as T06 | todo |
+| T11 | R10 | desync_hold | Suspended transmitter drops sync | Synced; hold `data_sr` at 0, then at 1, for at least 48 cycles starting at payload byte 1 and at byte 5 | `sync` low ≤ 1 cycle after the first held ALIGN slot ends | todo |
+| T12 | R14 | clock | Clock at 100 MHz | — | Inspection: `CLK_PERIOD = 10ns` | todo |
+| T13 | R15 | synth | Synthesizable FSM | — | Colleague's RTL synthesizes with no latches; FSM recognized by the tool | todo |
 
-*Things worth a row above once you decide they matter.*
+**Phase 2 — randomized**
 
-- [ ] Reset asserted off clock edge (proves asynchrony, R2)
-- [ ] Reset pulse narrower than one clock period (R2)
-- [ ] Reset held high across a full valid sync sequence — must not sync (R2, level-sensitive)
-- [ ] Reset asserted mid-byte / mid-frame / during the alignment word (R3)
-- [ ] After reset, DUT requires three fresh alignment words — no resume (R3)
-- [ ] Random bit lead-in, length not a multiple of 8 (DUT joins a running stream)
-- [ ] Alignment pattern appearing inside the payload (false lock)
-- [ ] Exactly 2 alignment words then a break — must **not** sync
-- [ ] Sync drop on the 1st vs 5th payload byte
-- [ ] `data_sr` held constant (suspended data, R10)
-- [ ] Payload of all `0x00` / all `0xFF`
-- [ ] Back-to-back frames with no gap
-- [ ] Re-sync after a drop
-- [ ] *...*
+| Test ID | Req(s) | Name | Description | Stimulus | Checks | Status |
+|---|---|---|---|---|---|---|
+| T20 | R4–R9, R11–R13 | rand_clean | §3.2 2a | Random lead-in (N mod 8 ≠ 0), then 200 frames with biased payloads | Queue scoreboard exact; `sync` never falls after rising; A1–A7 | todo |
+| T21 | R8, R10 | rand_perturb | §3.2 2b | 2a traffic plus a random perturbation from the §3.2 table every few frames | §3.2 2b properties; payload-flip bytes via the scoreboard; A1–A7 | todo |
+
+Payload generator rule (T20/T21): an embedded `0xA5` never sits at the same bit offset in
+two consecutive frames. This keeps a false phase from collecting three matches and
+makes the "scoreboard start" claim in §3.2 hold by construction.
+
+### 4.1 Corner cases
+
+Each one is covered by the row(s) shown.
+
+- [x] Reset asserted off clock edge (proves asynchrony, R2) — T02
+- [x] Reset pulse narrower than one clock period (R2) — T03
+- [x] Reset held high across a full valid sync sequence — must not sync (R2, level-sensitive) — T04
+- [x] Reset asserted mid-byte / mid-frame / during the alignment word (R3) — T05
+- [x] After reset, DUT requires three fresh alignment words — no resume (R3) — T05
+- [x] Random bit lead-in, length not a multiple of 8 (DUT joins a running stream) — T20
+- [x] Alignment pattern appearing inside the payload (false lock) — T20, T21
+- [x] Exactly 2 alignment words then a break — must **not** sync — T07
+- [x] Sync drop on the 1st vs 5th payload byte — T11
+- [x] `data_sr` held constant (suspended data, R10) — T11, T21
+- [x] Payload of all `0x00` / all `0xFF` — T09
+- [x] Back-to-back frames with no gap — T08, T20
+- [x] Re-sync after a drop — T10, T21
 
 ---
 
@@ -280,25 +298,37 @@ Example row:
 
 ### 5.1 Functional coverage
 
+Sampled from stimulus-side knowledge: the TB knows what it drove.
+
 | Coverpoint | Bins | Rationale |
 |---|---|---|
-| | | |
+| `leadin_mod8` | 1..7 | Every bit phase the hunt must recover from |
+| `desync_cause` | align_flip, hold0, hold1, slip_ins, slip_del | Every R10 stimulus |
+| `flip_bit` | 0..7 | Bit position of the corrupted ALIGN bit; first vs last bit is where off-by-ones hide |
+| `hold_start` | payload byte 1..5 | Suspension starting anywhere in the payload |
+| `a5_form` | aligned, straddle offset 1..7 | Both embedded forms from §3.2 |
+| `a5_byte` | payload byte 1..5 | Where the embedded pattern sits |
+| `rst_phase` | mid_byte, byte_boundary, in_align | §3.1 "state cleared" offsets |
+| `rst_state` | hunting, synced | Reset from both main states |
 
 ### 5.2 Cross coverage
 
 | Cross | Rationale |
 |---|---|
-| | |
+| `rst_phase × rst_state` | Partially-filled shift register in each state |
+| `a5_form × a5_byte` | Embedded pattern at every byte position, in both forms |
 
 ### 5.3 Code coverage goals
 
+Applies to the colleague's RTL. Unreachable items get a written waiver.
+
 | Metric | Target |
 |---|---|
-| Statement | |
-| Branch | |
-| FSM state | |
-| FSM transition | |
-| Toggle | |
+| Statement | 100% |
+| Branch | 100% |
+| FSM state | 100% |
+| FSM transition | 100% |
+| Toggle | 100% on ports |
 
 ---
 
@@ -330,11 +360,12 @@ property p_en_implies_sync;
     @(posedge clk) disable iff (rst) data_pl_en |-> sync;
 endproperty
 
-// A5 - byte cadence while locked: 8 cycles inside a payload,
-// 16 across the alignment word. Vacuous if sync drops.
+// A5 - byte cadence while locked: next pulse exactly 8 cycles later inside a
+// payload, exactly 16 across the alignment word. Aborts if sync drops.
 property p_en_cadence;
     @(posedge clk) disable iff (rst || !sync)
-    data_pl_en |-> ##[8:16] (data_pl_en || !sync);
+    data_pl_en |=> (!data_pl_en [*7]  ##1 data_pl_en)
+                or (!data_pl_en [*15] ##1 data_pl_en);
 endproperty
 ```
 
@@ -386,10 +417,11 @@ fresh alignment words are required).
 
 The verification effort is done when:
 
-- [ ] Every requirement in §2 maps to a passing test in §4
-- [ ] All tests pass with zero `$error` / zero assertion failures
-- [ ] Coverage goals in §5 are met
-- [ ] *...*
+- [ ] Every requirement in §2 maps to a passing row in §4 (R1, R14, R15 by inspection/synthesis)
+- [ ] All tests pass against the colleague's RTL with zero `$error` / zero assertion failures
+- [ ] Every assertion in §6 fired non-vacuously at least once
+- [ ] Coverage goals in §5 are met, or each gap has a written waiver
+- [ ] T20/T21 pass on at least 10 seeds
 
 ---
 
