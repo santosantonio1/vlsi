@@ -1,0 +1,10 @@
+transcript
+
+**/work
+**/transcript
+**/*.ini
+**/*.wlf
+**/*.bak
+
+**/*.log
+**/*.aux
