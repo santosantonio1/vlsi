@@ -1,6 +1,4 @@
-interface ps2_driver_if.sv #(
-
-) (
+interface ps2_driver_if (
     input logic clock_in,
     input logic clock_ps2
 );
