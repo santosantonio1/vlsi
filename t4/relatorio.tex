@@ -1,0 +1,212 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{tabularx}
+
+\begin{document}
+
+\begin{center}
+    {\large\bfseries Relatório --- Trabalho 4: Driver PS/2}\\[4pt]
+    Lucas Damo $\cdot$ Antônio dos Santos\\[4pt]
+    Projeto de Sistemas Integrados (98G07-04) $\cdot$ Turma 310 $\cdot$ 06/11/2026
+\end{center}
+
+\section*{1. Visão geral}
+
+Projetamos o bloco \texttt{ps2\_driver} em SystemVerilog. Ele lê um teclado pelo protocolo PS/2 e entrega o caractere em ASCII em \texttt{data\_p}, com \texttt{data\_p\_en} em nível alto durante um ciclo de \texttt{clock\_in}. O RTL foi verificado no QuestaSim 2025.3 com um testbench autoverificável e sintetizado no Cadence Genus 21.1 com a biblioteca ASAP7 (7 nm) usada no laboratório 2.
+
+\section*{2. Arquitetura}
+
+Toda a lógica é sensível à borda de subida de \texttt{clock\_in} (100 MHz) e usa reset assíncrono ativo em nível alto (item 6 da especificação; a Tabela 1 diz ``síncrono'', mas seguimos o item 6). O caminho de dados é:
+
+\begin{center}
+\small clock\_ps2, data\_ps2 $\rightarrow$ sincronizador 2-FF $\rightarrow$ filtro de glitch $\rightarrow$ borda de descida $\rightarrow$ FSM $\rightarrow$ filtro F0 $\rightarrow$ decodificador $\rightarrow$ data\_p, data\_p\_en
+\end{center}
+
+\begin{itemize}
+    \item \textbf{Sincronizador:} \texttt{clock\_ps2} e \texttt{data\_ps2} vêm do teclado, sem relação com \texttt{clock\_in}, e passam por 2 flip-flops. O valor de reset é 1, o nível ocioso do PS/2.
+    \item \textbf{Filtro de glitch:} o \texttt{clock\_ps2} filtrado só muda após \texttt{FILTER} = 8 amostras iguais seguidas (80 ns), bem abaixo do semiperíodo mínimo de 500 ns a 1 MHz. Um glitch não gera um bit falso.
+    \item \textbf{Detector de borda:} gera o pulso \texttt{fall} de 1 ciclo na borda de descida do clock filtrado; a FSM só avança nesse pulso, amostrando \texttt{data\_ps2} como pede a Figura 2.
+    \item \textbf{Filtro de break code:} o byte \texttt{F0} indica que a próxima tecla foi solta; esse byte é descartado, então cada tecla gera um único caractere.
+    \item \textbf{Decodificador:} um \texttt{case} combinacional mapeia 52 scancodes da Figura 3: A--Z (maiúsculas), 0--9, espaço, os 11 símbolos sem shift e Enter (0x0D), Backspace (0x08), Tab (0x09) e Esc (0x1B). Teclas sem ASCII (F1--F12, Shift, Ctrl, Alt, Caps) não geram saída.
+    \item \textbf{Saída:} \texttt{data\_p} é registrado e mantém o último caractere; \texttt{data\_p\_en} fica em 1 só no ciclo seguinte a uma decodificação válida.
+\end{itemize}
+
+\begin{center}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.17\textwidth}|>{\raggedright\arraybackslash}p{0.75\textwidth}|}
+\hline
+\textbf{Estado} & \textbf{Ação em cada borda de descida de clock\_ps2} \\
+\hline
+IDLE & se data = 0 (start bit) $\rightarrow$ DATA \\
+\hline
+DATA & desloca o bit para o registrador, LSB primeiro; após 8 bits $\rightarrow$ PARITY \\
+\hline
+PARITY & par\_ok = XOR dos 8 bits e de P (paridade ímpar: o XOR dos 9 bits é 1) $\rightarrow$ STOP \\
+\hline
+STOP & se stop = 1 e par\_ok, entrega o byte; sempre $\rightarrow$ IDLE \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Simplificações:} não tratamos Shift/Caps Lock (letras sempre maiúsculas, símbolos sem shift) nem o prefixo \texttt{E0} (é ignorado e o byte seguinte é decodificado normalmente). Não há timeout de quadro: um quadro cortado no meio desalinha a recepção até o próximo reset.
+
+\section*{3. Verificação}
+
+O testbench (\texttt{tb.sv}) gera os quadros PS/2 com a tarefa \texttt{send}: o dado muda com \texttt{clock\_ps2} em alto e o clock desce meio período depois. Um scoreboard guarda numa fila o ASCII esperado e compara cada \texttt{data\_p} quando \texttt{data\_p\_en} sobe. Uma assertion concorrente (\texttt{data\_p\_en |=> !data\_p\_en}) garante o pulso de um ciclo. Testes aplicados:
+
+\begin{center}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.52\textwidth}|>{\raggedright\arraybackslash}p{0.07\textwidth}|>{\raggedright\arraybackslash}p{0.33\textwidth}|}
+\hline
+\textbf{Teste} & \textbf{Item} & \textbf{Resultado esperado} \\
+\hline
+As 52 teclas mapeadas, a 1 MHz e a 100 kHz & 7, 11 & data\_p = ASCII da tecla \\
+\hline
+Tecla pressionada e solta: 1C, F0 1C & --- & um único 'A' \\
+\hline
+Quadro com paridade errada & 9 & nenhuma saída \\
+\hline
+Quadro com stop bit errado & 10 & nenhuma saída \\
+\hline
+Teclas sem ASCII: F1, Shift, Caps & 11 & nenhuma saída \\
+\hline
+Glitch de 30 ns em clock\_ps2 com data em 0 & --- & não é tomado como start bit \\
+\hline
+Pulso de reset de 2 ns entre bordas de clock\_in, no meio de um quadro & 6 & quadro descartado; o seguinte é decodificado \\
+\hline
+data\_p\_en em todos os testes & 8 & nunca em 1 por dois ciclos seguidos \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Resultado:} \texttt{PASS}, 0 erros em 7,03 ms de tempo simulado (ver \texttt{out.log}).
+
+Para validar o próprio testbench, inserimos 12 defeitos no RTL, um de cada vez. O testbench detectou todos:
+
+\begin{center}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.33\textwidth}|>{\raggedright\arraybackslash}p{0.13\textwidth}|>{\raggedright\arraybackslash}p{0.33\textwidth}|>{\raggedright\arraybackslash}p{0.13\textwidth}|}
+\hline
+\textbf{Defeito inserido no RTL} & \textbf{Erros} & \textbf{Defeito inserido no RTL} & \textbf{Erros} \\
+\hline
+reset síncrono & 1 & break code ignorado & 1 \\
+\hline
+paridade par & 2 & sem checagem de paridade & 1 \\
+\hline
+bits recebidos MSB primeiro & 35 & sem checagem do stop bit & 1 \\
+\hline
+amostra na borda de subida & 12 & 'A' mapeado para 'a' & 3 \\
+\hline
+sem filtro de glitch & 2 & '-' mapeado para '\_' & 2 \\
+\hline
+data\_p\_en preso em 1 & 1.403.879 & Enter mapeado para 0x0A & 2 \\
+\hline
+\end{tabular}
+\end{center}
+
+\section*{4. Síntese lógica}
+
+O script \texttt{synth/scripts/genus\_t4.tcl} segue a estrutura dos scripts do laboratório 2: mesmas bibliotecas ASAP7 LVT, corner TT (0,7 V, 25 $^\circ$C), LEFs escalados 4x e arquivo QRC, com inserção de clock gating ativada. As constraints estão em \texttt{synth/constraints/ps2\_driver.sdc} (unidades da biblioteca: ps e fF):
+
+\begin{center}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.42\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|>{\raggedright\arraybackslash}p{0.31\textwidth}|}
+\hline
+\textbf{Constraint} & \textbf{Valor} & \textbf{Motivo} \\
+\hline
+create\_clock clock\_in & 10 000 ps & 100 MHz (item 4) \\
+\hline
+set\_clock\_uncertainty / transition & 100 ps / 20 ps & margem para jitter e skew \\
+\hline
+set\_input\_delay (reset\_in, clock\_ps2, data\_ps2) & 3 000 ps & 30\% do período, como no lab 2 \\
+\hline
+set\_output\_delay (data\_p, data\_p\_en) & 3 000 ps & 30\% do período \\
+\hline
+set\_false\_path -from clock\_ps2, data\_ps2 & --- & assíncronos, entram no sincronizador 2-FF \\
+\hline
+set\_driving\_cell / set\_load & BUFx2 / 2 fF & entradas e saídas realistas \\
+\hline
+\end{tabular}
+\end{center}
+
+O \texttt{check\_design} não encontrou referências não resolvidas e o \texttt{report timing -lint} não apontou nenhum problema (nenhuma entrada ou saída sem constraint).
+
+\section*{5. Resultados}
+
+\textbf{Timing} (\texttt{ps2\_driver.timing.rep} e \texttt{ps2\_driver.timing\_reg2reg.rep}): todos os caminhos cumprem a restrição de 100 MHz com folga.
+
+\begin{center}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.61\textwidth}|>{\raggedright\arraybackslash}p{0.13\textwidth}|>{\raggedright\arraybackslash}p{0.18\textwidth}|}
+\hline
+\textbf{Caminho} & \textbf{Atraso} & \textbf{Slack} \\
+\hline
+Pior caminho geral: data\_p\_en\_reg $\rightarrow$ porta data\_p\_en (com 3 000 ps de output delay) & 52 ps & +6 848 ps \\
+\hline
+Pior caminho interno: sr\_reg[5] $\rightarrow$ decodificador $\rightarrow$ enable do clock gating & 407 ps & +9 463 ps \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Área} (\texttt{ps2\_driver.area.rep} e \texttt{ps2\_driver.gates.rep}):
+
+\begin{center}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.55\textwidth}|>{\raggedright\arraybackslash}p{0.14\textwidth}|>{\raggedright\arraybackslash}p{0.23\textwidth}|}
+\hline
+\textbf{Tipo} & \textbf{Células} & \textbf{Área ($\mu$m$^2$)} \\
+\hline
+Flip-flops (DFFASRHQNx1, reset/set assíncrono) & 37 & 224,415 \\
+\hline
+Clock gating (ICGx1) & 4 & 16,796 \\
+\hline
+Inversores & 51 & 35,692 \\
+\hline
+Lógica combinacional & 137 & 180,092 \\
+\hline
+Total de células & 229 & 456,996 \\
+\hline
+Interconexão (estimada) & --- & 181,740 \\
+\hline
+\textbf{Área total} &  & \textbf{638,735} \\
+\hline
+\end{tabular}
+\end{center}
+
+O RTL tem 38 flip-flops, mas o Genus removeu \texttt{data\_p[7]}: todo ASCII mapeado é menor que 0x80, então esse bit é sempre 0. O clock gating cobre 30 dos 37 flip-flops (81\%).
+
+\textbf{Potência} (\texttt{ps2\_driver.power.rep}, estimativa vectorless do Genus, a 100 MHz):
+
+\begin{center}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.13\textwidth}|>{\raggedright\arraybackslash}p{0.13\textwidth}|>{\raggedright\arraybackslash}p{0.17\textwidth}|>{\raggedright\arraybackslash}p{0.17\textwidth}|>{\raggedright\arraybackslash}p{0.11\textwidth}|}
+\hline
+\textbf{Categoria} & \textbf{Leakage} & \textbf{Interna} & \textbf{Chaveamento} & \textbf{Total} & \textbf{\%} \\
+\hline
+Registradores & 0,110 & 2,856 & 0,233 & 3,200 & 61,0 \\
+\hline
+Lógica & 0,120 & 0,263 & 0,450 & 0,832 & 15,9 \\
+\hline
+Clock & 0,012 & 0,303 & 0,895 & 1,209 & 23,1 \\
+\hline
+\textbf{Total ($\mu$W)} & 0,242 & 3,422 & 1,578 & \textbf{5,241} & 100 \\
+\hline
+\end{tabular}
+\end{center}
+
+A potência total é de 5,24 $\mu$W. Os registradores respondem por 61\% do total, quase toda em potência interna das células.
+
+\section*{6. Arquivos entregues}
+
+\begin{itemize}
+    \item \texttt{ps2\_driver.sv}: RTL do bloco.
+    \item \texttt{tb.sv}, \texttt{ps2\_driver\_if.sv}, \texttt{sim.do}, \texttt{out.log}: testbench, interface, script e log da simulação (\texttt{vsim -c -do \textquotedbl{}do sim.do; quit -f\textquotedbl{}}).
+    \item \texttt{synth/scripts/genus\_t4.tcl} e \texttt{synth/constraints/ps2\_driver.sdc}: script de síntese e constraints. Executar em \texttt{synth/run} com \texttt{genus -batch -files ../scripts/genus\_t4.tcl}, com as pastas \texttt{lib}, \texttt{lef}, \texttt{techlef} e \texttt{qrc} do laboratório 2 dentro de \texttt{synth/}.
+    \item \texttt{synth/reports/}: relatórios de timing, área, portas, potência, clocks, lint e clock gating.
+    \item \texttt{synth/outputs/}: netlist sintetizada e SDC gerado pelo Genus.
+\end{itemize}
+
+\end{document}
