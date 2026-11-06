@@ -8,3 +8,10 @@ transcript
 
 **/*.log
 **/*.aux
+# t4 synthesis: tech files extracted from the lab 2 zip, Genus scratch
+t4/sinste_logica_lab2.zip
+t4/synth/lib/
+t4/synth/lef/
+t4/synth/techlef/
+t4/synth/qrc/
+t4/synth/run/

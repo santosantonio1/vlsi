@@ -27,7 +27,7 @@ module tb;
         forever #(CLK_PERIOD/2) clock_in = ~clock_in;
     end
 
-    // scancode -> ASCII (spec Figura 3): letters, digits, space
+    // scancode -> ASCII (spec Figura 3): letters, digits, space, unshifted symbols, control keys
     logic [7:0] ascii [logic [7:0]] = '{
         8'h1C: "A", 8'h32: "B", 8'h21: "C", 8'h23: "D", 8'h24: "E", 8'h2B: "F",
         8'h34: "G", 8'h33: "H", 8'h43: "I", 8'h3B: "J", 8'h42: "K", 8'h4B: "L",
@@ -35,7 +35,9 @@ module tb;
         8'h1B: "S", 8'h2C: "T", 8'h3C: "U", 8'h2A: "V", 8'h1D: "W", 8'h22: "X",
         8'h35: "Y", 8'h1A: "Z", 8'h45: "0", 8'h16: "1", 8'h1E: "2", 8'h26: "3",
         8'h25: "4", 8'h2E: "5", 8'h36: "6", 8'h3D: "7", 8'h3E: "8", 8'h46: "9",
-        8'h29: " "
+        8'h29: " ", 8'h0E: "`", 8'h4E: "-", 8'h55: "=", 8'h54: "[", 8'h5B: "]",
+        8'h5D: "\\", 8'h4C: ";", 8'h52: "'", 8'h41: ",", 8'h49: ".", 8'h4A: "/",
+        8'h5A: 8'h0D, 8'h66: 8'h08, 8'h0D: 8'h09, 8'h76: 8'h1B
     };
 
     logic [7:0] exp_q [$];
@@ -43,10 +45,11 @@ module tb;
     time        period = CLK_PERIOD_MAX;
 
     // start, 8 data bits LSB first, odd parity, stop; DUT samples on falling edge
-    task automatic send(input logic [7:0] code, input logic bad_par = 0, input int nbits = 11);
+    task automatic send(input logic [7:0] code, input logic bad_par = 0, input int nbits = 11,
+                        input logic bad_stop = 0);
         logic [10:0] frame;
 
-        frame = {1'b1, ~^code ^ bad_par, code, 1'b0};
+        frame = {~bad_stop, ~^code ^ bad_par, code, 1'b0};
         for (int i = 0; i < nbits; i++) begin
             vif.data_ps2 = frame[i];
             #(period/2);
@@ -105,6 +108,26 @@ module tb;
         // bad parity: no output
         send(8'h1C, 1);
         key(8'h32);
+
+        // bad stop bit: no output
+        send(8'h1C, 0, 11, 1);
+        key(8'h32);
+
+        // keys without ASCII (F1, Shift, Caps): no output
+        send(8'h05);
+        send(8'h12);
+        send(8'h58);
+        key(8'h24);
+
+        // 30 ns glitch on clock_ps2 with data low must not look like a start bit
+        vif.data_ps2 = 0;
+        clock_ps2    = 0;
+        #30;
+        clock_ps2    = 1;
+        #(CLK_PERIOD_MAX);
+        vif.data_ps2 = 1;
+        #(CLK_PERIOD_MAX);
+        key(8'h23);
 
         // async reset: 2 ns pulse between clock_in edges, mid-frame
         send(8'h1C, 0, 5);
